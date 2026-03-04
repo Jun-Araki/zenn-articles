@@ -13,7 +13,6 @@ published: false
 この記事は、実際に Cursor 上で OpenClaw を触りながら、
 
 - Zenn 記事リポジトリの構成
-- Git リポジトリ／サブモジュールまわり
 - OpenClaw Browser Relay（Chrome 拡張）
 - Zenn 記事 → X 投稿までの自動化フロー
 
@@ -41,26 +40,7 @@ published: false
 - それ以外の場所にある `articles/` は整理（削除・非推奨）し、  
   「**Zenn 関連は zenn-articles/ の中だけを見る**」と決めてしまうと頭がスッキリする。
 
-## 2. Git サブモジュール地獄から抜ける
-
-### 症状
-
-- ルート `workspace` の Git リポジトリの中に、  
-  かつての `zenn-content` をサブモジュールっぽく入れていた。
-- しかし `.gitmodules` は壊れており、
-  - `git status` で `zenn-content` が中途半端な状態
-  - `git pull` すると「ローカル変更で上書きされる」と怒られる
-
-### 解決
-
-- **「いったん白紙にする」方針を取る場合のコツ**:
-  1. Zenn 用に使いたいディレクトリ（ここでは `zenn-articles/`）だけを残す。
-  2. その中で `.git` をいったん退避してから、新しく `git init` し直す。
-  3. すべてのファイルを `git add -A` → `git commit` して、**クリーンな履歴**を作り直す。
-- 元のサブモジュール状態や中途半端な `.gitmodules` にこだわらず、  
-  「**Zenn 用リポジトリは zenn-articles/ 単体**」と割り切るのが一番ラク。
-
-## 3. OpenClaw Browser Relay のエラー
+## 2. OpenClaw Browser Relay のエラー
 
 ### 状況
 
@@ -75,11 +55,25 @@ published: false
 1. **Browser Relay サーバー本体が起動していないのに、拡張だけ先に触っていた。**
 2. Gateway token をどこから取ってくるのか一瞬分かりにくい。
 
+### Gateway token の取得
+
+OpenClaw の設定ファイルから Gateway 用のトークンを確認できます。ターミナルで次を実行してください。
+
+```bash
+cat ~/.openclaw/openclaw.json
+```
+
+出力された JSON 内の `gateway.auth.token`（または環境変数 `OPENCLAW_GATEWAY_TOKEN` に相当する値）を、Chrome 拡張の「Gateway token」欄にそのまま貼り付けます。
+
+### Mac / Windows の違い
+
+Browser Relay には **Mac 版** と **Windows 版** があり、拡張のインストール方法やリレー起動の手順が環境によって異なります。公式ドキュメント（例: `docs.openclaw.ai/tools/chrome-extension`）で、自分の OS に合わせた手順を確認してください。
+
 ### 実際にやったこと
 
 1. `openclaw tui` から Browser Relay / Gateway を起動する。
    - メニューから「browser extension」「gateway」系の項目を探して Start。
-2. Gateway の設定（`gateway.auth.token` など）からトークン文字列を取り出す。
+2. 上記のとおり `~/.openclaw/openclaw.json` から Gateway token を取り出す。
 3. Chrome 拡張のオプション画面で:
    - Port はデフォルトの `18792` のまま。
    - Gateway token に上記トークンを貼り付けて Save。
@@ -92,7 +86,7 @@ published: false
 
 と理解しておくこと。
 
-## 4. Zenn 記事 → X 投稿までのフロー設計
+## 3. Zenn 記事 → X 投稿までのフロー設計
 
 ### やりたいこと
 
@@ -123,20 +117,17 @@ published: false
   2. それをコピーして **手動で X に貼り付けて投稿**。
   という運用からスタートするのが現実的だと分かった。
 
-## 5. これから同じことをやるなら
+## 4. これから同じことをやるなら
 
 同じように OpenClaw で Zenn 記事と X 投稿を連携したいなら、次の順番がおすすめです。
 
 1. **Zenn リポジトリを 1 箇所に決める**
    - 例: `~/.../zenn-articles`
    - その中に `articles/` と `books/` を作る。
-2. **Git をクリーンな状態にする**
-   - サブモジュールや壊れた `.gitmodules` があれば切り離す。
-   - 必要なら `git init` し直して履歴を作り直す。
-3. **Browser Relay を動かせるようにする**
-   - `openclaw tui` から Gateway / Relay を起動。
-   - Chrome 拡張の Port と Gateway token を合わせる。
-4. **スキルで役割分担する**
+2. **Browser Relay を動かせるようにする**
+   - 自分の OS（Mac / Windows）に合った手順で拡張を導入する。
+   - `openclaw tui` から Gateway / Relay を起動し、`cat ~/.openclaw/openclaw.json` で取得した token を拡張に設定する。
+3. **スキルで役割分担する**
    - 記事を書くスキル（Zenn 用）
    - 記事から X 文面を作るスキル
    - ブラウザ経由で X に投稿するスキル
@@ -148,10 +139,9 @@ OpenClaw と Zenn を組み合わせると、
 「記事執筆 → 要約 → X 投稿」までをかなりの部分まで自動化できますが、
 
 - リポジトリ構成
-- Git の整理
-- Browser Relay（ポートとトークン）
+- Browser Relay（ポートとトークン、Mac/Windows の違い）
 
-の 3 点でつまずきやすいと感じました。
+の 2 点でつまずきやすいと感じました。
 
 この記事が、未来の自分や同じ構成で悩んでいる誰かの助けになればうれしいです。
 
