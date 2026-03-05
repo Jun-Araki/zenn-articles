@@ -161,23 +161,41 @@ flowchart TD
 
 ### 設定ファイル（settings.json）
 
-`~/.claude/settings.json` に記述することで、ツールごとに許可・拒否を細かく制御できます。
+`~/.claude/settings.json` に記述することで、ツールごとに許可・拒否を細かく制御できます。以下は実際に使っている設定です。
 
 ```json
 {
   "permissions": {
     "allow": [
+      "Bash",
       "Bash(git *)",
       "Bash(npm *)",
       "Read",
-      "Edit"
+      "Edit",
+      "WebFetch",
+      "WebSearch"
     ],
     "deny": [
-      "Bash(rm -rf *)"
+      "Bash(rm *)",
+      "Edit(**/.env*)"
     ]
   }
 }
 ```
+
+| 設定 | 内容 |
+|------|------|
+| `Bash` | Bash コマンド全般を許可 |
+| `Bash(git *)` | git コマンドを許可 |
+| `Bash(npm *)` | npm コマンドを許可 |
+| `Read` / `Edit` | ファイルの読み書きを許可 |
+| `WebFetch` / `WebSearch` | Web 検索・取得を許可 |
+| `Bash(rm *)` | **rm コマンドをすべて拒否** |
+| `Edit(**/.env*)` | **.env ファイルの編集を拒否** |
+
+:::message alert
+`deny` ルールは `allow` より優先されます。`rm` や `.env` の編集は誤操作・情報漏洩防止のため必ず deny に入れておきましょう。
+:::
 
 ### 実際の確認ダイアログ
 
@@ -196,6 +214,71 @@ Allow? [y/n/always/never]
 :::message
 初めて使う場合は**デフォルト設定のまま（都度確認）** で始めるのが安全です。操作の流れに慣れてから `always` を活用していきましょう。
 :::
+
+### 完了通知音（Hooks）
+
+`hooks` を設定すると、Claude が応答を完了したタイミングで任意のコマンドを実行できます。macOS であれば `afplay` でサウンドを鳴らすことで、長い処理が終わったことをすぐに気づけます。
+
+```json
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "afplay /System/Library/Sounds/Glass.aiff"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+`Stop` イベントは Claude の応答完了時に発火します。`/System/Library/Sounds/` 配下には他にも `Ping.aiff`・`Tink.aiff` などがあるので、好みの音に変えられます。
+
+### コンテキスト使用率をステータスラインに表示
+
+長い会話を続けているとコンテキストウィンドウが埋まってきます。以下のスクリプトを使うと、現在のコンテキスト使用率をステータスラインにパーセントで表示できます。
+
+**手順 1: スクリプトを作成**
+
+`~/.claude/statusline.sh` を作成します。
+
+```bash
+#!/bin/bash
+input=$(cat)
+CONTEXT_SIZE=$(echo "$input" | jq -r '.context_window.context_window_size')
+USAGE=$(echo "$input" | jq '.context_window.current_usage')
+
+if [ "$USAGE" != "null" ] && [ "$CONTEXT_SIZE" != "null" ] && [ "$CONTEXT_SIZE" != "0" ]; then
+    CURRENT=$(echo "$USAGE" | jq '.input_tokens + .cache_creation_input_tokens + .cache_read_input_tokens')
+    PERCENT=$((CURRENT * 100 / CONTEXT_SIZE))
+    echo "Context: ${PERCENT}%"
+else
+    echo "Context: -"
+fi
+```
+
+**手順 2: 実行権限を付与**
+
+```bash
+chmod +x ~/.claude/statusline.sh
+```
+
+**手順 3: settings.json に追加**
+
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "~/.claude/statusline.sh"
+  }
+}
+```
+
+これで画面下部に `Context: 42%` のように使用率が表示されます。80〜90% を超えてきたら会話を新しく始めるサインです。
 
 ---
 
