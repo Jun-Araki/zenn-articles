@@ -14,12 +14,19 @@ published: true
 
 この記事では、技術スタックの選定理由から実装のポイントまでを解説する。
 
+## リポジトリ
+
+https://github.com/Jun-Araki/youtube-convertor
+
 ## 完成したもの
 
 - YouTube URLを貼り付けると、英語字幕を自動取得
 - 動画再生に合わせて字幕をリアルタイムでハイライト
 - **単語をクリックすると、その単語の再生位置にジャンプ**
 - 再生中の単語がリアルタイムで強調表示される
+
+![Listen With YouTube のデモ画面](/images/listen-with-youtube-demo.png)
+*YouTube URLを貼り付けるだけで、動画と英語字幕が同期表示される*
 
 ## 技術スタック
 
